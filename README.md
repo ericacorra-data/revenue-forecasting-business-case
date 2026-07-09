@@ -143,6 +143,20 @@ Dataset loaded
 ```python
 vendite.info()
 ```
+```text
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 190966 entries, 0 to 190965
+Data columns (total 5 columns):
+ #   Column    Non-Null Count   Dtype  
+---  ------    --------------   -----  
+ 0   data      190966 non-null  object 
+ 1   cliente   190966 non-null  int64  
+ 2   prodotto  190966 non-null  int64  
+ 3   quantita  190966 non-null  int64  
+ 4   prezzo    190966 non-null  float64
+dtypes: float64(1), int64(3), object(1)
+memory usage: 7.3+ MB
+```
 ###  Cleaning data
 Cleaning data is crucial because it directly impacts the accuracy, consistency, and reliability of any analysis, model, or decision-making process.
 
