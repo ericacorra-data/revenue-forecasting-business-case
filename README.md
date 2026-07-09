@@ -256,7 +256,7 @@ Unlike the ARIMA model, the SARIMA forecasts exhibit clear seasonal fluctuations
 ```python
 plt.figure(figsize=(12,3))
 # Storico
-plt.plot(monthly_revenue.index, monthly_revenue.values / 1_000_000, marker = 'o', label = "Storico")
+plt.plot(monthly_revenue.index, monthly_revenue.values / 1_000_000, marker = 'o', label = "Historical Revenue")
 
 # Forecast
 plt.plot(forecast_ARIMA.index, forecast_ARIMA.values / 1_000_000, marker = 'x', linestyle = '--', color='red', label = "Forecast ARIMA")
