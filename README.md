@@ -183,36 +183,120 @@ vendite.head()
 | 2016-09-01 | 96 | 5 | 3,923 | 20.27 | 79,519.21 |
 | 2019-05-19 | 20 | 4 | 1,516 | 35.45 | 53,742.20 |
 | 2019-05-19 | 106 | 4 | 1,516 | 36.18 | 54,848.88 |
-
+### Dealing with null values
+This refers to handling the missing or absent data in a dataset. In many datasets, especially large or real-world ones, it’s common to encounter missing values. 
 ```python
-
+vendite.isnull().sum()
+```
+```text
+data         0
+cliente      0
+prodotto     0
+quantita     0
+prezzo       0
+fatturato    0
+dtype: int64
+```
+✔ No missing values were detected.
+### Dealing with duplicates
+This is the process of identifying and managing duplicate records in a dataset. Duplicates can occur when the same data is entered multiple times.
+```text
+Duplicate rows: 18
+```
+No duplicate records were removed because duplicate observations represent less than 0.03% of the dataset and therefore have a negligible impact on the analysis.
+## Exploratory Data Analysis
+---
+```python
+# Create a time-series structure by using dates as the index and ordering records chronologically
+vendite = vendite.set_index("data")
+vendite = vendite.sort_index()
+monthly_revenue = vendite["fatturato"].resample("ME").sum()
+# Resample transaction data by month-end and calculate total monthly revenue for time-series analysis
+monthly_revenue = vendite["fatturato"].resample("ME").sum()
 ```
 ```python
-
+plt.figure(figsize=(12,3))
+plt.plot(monthly_revenue.index, monthly_revenue / 1000000.0, linewidth=2)
+plt.title("Revenue by month (2015-2025)", fontsize=16, fontweight="bold")
+plt.xlabel("Year",fontsize=14, fontweight="bold")
+plt.ylabel("Revenue (M€)",fontsize=14,fontweight="bold")
+plt.grid(True)
+sns.despine()
+plt.show()
 ```
+![Revenue Forecast](revenue_files/revenue_by_month.png)
+## Forecasting Models
+#### ARIMA
+The optimal ARIMA configuration was selected through a systematic comparison of multiple candidate models using AIC, BIC and out-of-sample RMSE.
+
 ```python
-
+# Fit an ARIMA(2,1,1) model to the monthly revenue series
+model_ARIMA = ARIMA (monthly_revenue, order = (2,1,1))
+# Estimate model parameters
+fit_ARIMA = model_ARIMA.fit()
+# Generate a 12-month revenue forecast
+forecast_ARIMA_res = fit_ARIMA.get_forecast(steps=12)
+# Extract forecasted values
+forecast_ARIMA = forecast_ARIMA_res.predicted_mean
+# Calculate 95% confidence intervals
+conf_int_ARIMA = forecast_ARIMA_res.conf_int(alpha=0.05)
 ```
+The ARIMA model forecasts gradually converge toward a stable long-term value of approximately €33.82M per month. This behavior is expected, as ARIMA captures trend and autocorrelation patterns but does not explicitly model seasonality. As a result, long-term forecasts tend to revert toward an equilibrium level rather than reproducing recurring seasonal fluctuations. The forecast for January 2025 is associated with a particularly wide 95% confidence interval (€6.82M–€49.90M), indicating substantial uncertainty in the prediction. 
+- ARIMA captures the long-term trend but fails to reproduce the strong annual seasonality observed in the historical revenue series. Consequently, it serves as a baseline model for comparison with seasonal forecasting approaches.
+#### SARIMA
+Three SARIMA configurations were evaluated to identify the most accurate seasonal forecasting model.
+SARIMA(1,1,2)(1,1,1,12) achieved the lowest forecasting error, confirming that explicitly modeling annual seasonality substantially improves predictive performance compared with the baseline ARIMA model.
+These results suggest that seasonality is one of the main drivers of revenue dynamics and should be incorporated into business forecasting models.
 ```python
-
+# Fit a seasonal ARIMA model (SARIMA) to capture both trend and annual seasonality in the revenue series
+model_SARIMA = SARIMAX(monthly_revenue, order=(1,1,2), seasonal_order =(1,1,1,12))
+# Estimate model parameters
+fit_SARIMA = model_SARIMA.fit()
+# Generate a 12-month forecast
+forecast_SARIMA_res = fit_SARIMA.get_forecast(steps=12)
+# Extract forecasted values
+forecast_SARIMA = forecast_SARIMA_res.predicted_mean
+# Calculate 95% confidence intervals
+conf_int_SARIMA = forecast_SARIMA_res.conf_int(alpha=0.05)
 ```
+Unlike the ARIMA model, the SARIMA forecasts exhibit clear seasonal fluctuations throughout the forecast horizon, closely reflecting the recurring patterns observed in the historical revenue series. Forecasted revenue varies significantly across months, with peaks reaching approximately €47.19M in May and lower values around €10.84M in August, indicating that the model successfully captures the annual seasonality present in the data. The 95% confidence intervals remain relatively wide, reflecting the inherent uncertainty of long-term forecasting. 
+- SARIMA successfully captures the annual seasonal pattern, producing forecasts that closely follow historical revenue dynamics and substantially improve predictive accuracy over ARIMA.
+
 ```python
+plt.figure(figsize=(12,3))
+# Storico
+plt.plot(monthly_revenue.index, monthly_revenue.values / 1_000_000, marker = 'o', label = "Storico")
 
+# Forecast
+plt.plot(forecast_ARIMA.index, forecast_ARIMA.values / 1_000_000, marker = 'x', linestyle = '--', color='red', label = "Forecast ARIMA")
+plt.fill_between(forecast_ARIMA.index, conf_int_ARIMA.iloc[:,0].values / 1_000_000, conf_int_ARIMA.iloc[:,1].values / 1_000_000, 
+                 color = 'pink', alpha =0.3, label ='95% CI ARIMA')
+
+plt.plot(forecast_SARIMA.index, forecast_SARIMA.values / 1_000_000, marker = '^', linestyle = '--', color='blue', label = "Forecast SARIMA")
+plt.fill_between(forecast_SARIMA.index, conf_int_SARIMA.iloc[:,0].values / 1_000_000, conf_int_SARIMA.iloc[:,1].values / 1_000_000,
+                 color = 'green', alpha =0.3, label ='95% CI SARIMA')
+
+plt.axvline(monthly_revenue.index[-1], color='grey', linestyle=':')
+plt.title("Revenue Forecast for the Next 12 Months with Confidence Intervals",fontsize=16, fontweight="bold")
+plt.xlabel("Year",fontsize=14, fontweight="bold")
+plt.ylabel("Revenue (M€)",fontsize=14, fontweight="bold")
+plt.grid(True)
+plt.legend()
+plt.show()
 ```
+![Revenue Forecast](revenue_files/revenue_forecast.png)
 ```python
+#### Holt-Winters
 
-```
 ```python
-
+# Apply Holt-Winters Exponential Smoothing to model trend and annual seasonality
+modello_HW = ExponentialSmoothing(monthly_revenue, trend="add", seasonal="add", seasonal_periods=12)
+# Estimate model parameters
+fit_HW = modello_HW.fit()
+# Generate a 12-month revenue forecast
+forecast_esponenziale = fit_HW.forecast(12)
 ```
-```python
-
-```
-```python
-
-``````python
-
-```
+The Holt-Winters Exponential Smoothing model successfully captures both trend and seasonal patterns in the monthly revenue series and generates more realistic revenue projections by explicitly modeling seasonal effects. The similarity between Holt-Winters and SARIMA forecasts further confirms the presence of strong annual seasonality in the dataset.
 
 
 
