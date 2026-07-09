@@ -291,8 +291,8 @@ last_months = 12
 storico_recente = monthly_revenue[-last_months:]
 
 plt.figure(figsize=(12,5))
-# Storico recente
-plt.plot(storico_recente.index, storico_recente/ 1_000_000, linewidth =2, marker = 'o', label = "Storico ultimi 36 mesi")
+# Historical data
+plt.plot(storico_recente.index, storico_recente/ 1_000_000, linewidth =2, marker = 'o', label = "Last 36 months")
 
 # Forecast
 plt.plot(forecast_ARIMA.index, forecast_ARIMA / 1_000_000, marker = 'x', linestyle = '--', color='red', label = "Forecast ARIMA")
