@@ -459,8 +459,8 @@ Optimistic Scenario (95%): 449.74 M€
 Probability of exceeding 400 M€: 100.0%
 ```
 >  Business Insight
-
-Monte Carlo simulation estimates an expected annual revenue of €437M with a 100% probability of exceeding the €400M target, indicating a robust and low-risk forecast.
+>
+>Monte Carlo simulation estimates an expected annual revenue of €437M with a 100% probability of exceeding the €400M target, indicating a robust and low-risk forecast.
 
 ```python
 # Select the most recent 36 months of historical revenue
