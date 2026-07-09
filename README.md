@@ -197,7 +197,6 @@ Duplicate rows: 18
 ```
 No duplicate records were removed because duplicate observations represent less than 0.03% of the dataset and therefore have a negligible impact on the analysis.
 ## Exploratory Data Analysis
----
 ```python
 # Create a time-series structure by using dates as the index and ordering records chronologically
 vendite = vendite.set_index("data")
