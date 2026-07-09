@@ -323,18 +323,10 @@ plt.show()
 # Generate forecasts for the 12-month test period using the best configuration of each model
 pred_test_ARIMA = ARIMA(train, order=(2,1,1)).fit().forecast(12)
 
-pred_test_SARIMA = SARIMAX(
-    train,
-    order=(1,1,2),
-    seasonal_order=(1,1,1,12)
-).fit(disp=False).forecast(12)
+pred_test_SARIMA = SARIMAX(train,order=(1,1,2),seasonal_order=(1,1,1,12)).fit(disp=False).forecast(12)
 
 pred_test_HW = ExponentialSmoothing(
-    train,
-    trend="add",
-    seasonal="add",
-    seasonal_periods=12
-).fit().forecast(12)
+    train,trend="add",seasonal="add",seasonal_periods=12).fit().forecast(12)
 ```
 ```python
 # Function to compute forecasting performance metrics
@@ -353,14 +345,8 @@ metrics_df = pd.DataFrame({
     "Holt-Winters": evaluate_model(test, pred_test_HW)
 }).T
 
-metrics_df = (
-    metrics_df
-      .round(2)
-      .sort_values("RMSE")
-)
-
-display(
-    metrics_df.style.format({
+metrics_df = (metrics_df.round(2).sort_values("RMSE"))
+display(metrics_df.style.format({
         "MAE": "{:,.0f}",
         "RMSE": "{:,.0f}",
         "MAPE (%)": "{:.2f}%"
@@ -470,27 +456,15 @@ storico_recent = monthly_revenue[-last_months:]
 plt.figure(figsize=(12,5))
 
 # Historical revenue
-plt.plot(storico_recent.index,
-         storico_recent / 1_000_000,
-         label="Historical Revenue",
-         linewidth=2)
+plt.plot(storico_recent.index,storico_recent / 1_000_000,label="Historical Revenue",linewidth=2)
 
 # Expected scenario from Monte Carlo simulation
-plt.plot(mean_series.index,
-         mean_series / 1_000_000,
-         linestyle="--",
-         label="Expected Scenario")
+plt.plot(mean_series.index,mean_series / 1_000_000,linestyle="--",label="Expected Scenario")
 
 # Forecast uncertainty range (5th–95th percentile)
-plt.fill_between(mc_index,
-                 pess_series / 1_000_000,
-                 opt_series / 1_000_000,
-                 alpha=0.2,
-                 label="5%-95% Confidence Range")
+plt.fill_between(mc_index,pess_series / 1_000_000, opt_series / 1_000_000,alpha=0.2,label="5%-95% Confidence Range")
 # Mark the transition between historical and forecast periods
-plt.axvline(mean_series.index[0],
-            linestyle=":",
-            color="black")
+plt.axvline(mean_series.index[0],linestyle=":",color="black")
 
 plt.title("Monte Carlo Simulation - Revenue Forecast",fontsize=16, fontweight="bold")
 plt.ylabel("Revenue (M€)",fontsize=14, fontweight="bold")
