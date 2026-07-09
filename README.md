@@ -305,7 +305,7 @@ plt.fill_between(forecast_SARIMA.index, conf_int_SARIMA.iloc[:,0] / 1_000_000, c
 
 plt.axvline(monthly_revenue.index[-1], color='grey', linestyle=':')
 
-plt.plot(forecast_esponenziale.index, forecast_esponenziale / 1_000_000, marker = '^', color='orange',  label = "Lissage esponenziale")
+plt.plot(forecast_esponenziale.index, forecast_esponenziale / 1_000_000, marker = '^', color='orange',  label = "Holt-Winters")
 
 plt.title("12-Month Revenue Forecast with Confidence Intervals - Model Comparison",fontsize=16, fontweight="bold")
 plt.xlabel("Date",fontsize=14, fontweight="bold")
