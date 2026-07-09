@@ -143,6 +143,7 @@ Dataset loaded
 ```python
 vendite.info()
 ```
+
 ```text
 <class 'pandas.core.frame.DataFrame'>
 RangeIndex: 190966 entries, 0 to 190965
