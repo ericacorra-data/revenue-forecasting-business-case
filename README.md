@@ -314,6 +314,7 @@ plt.grid(True)
 plt.legend()
 plt.show()
 ```
+![Revenue Forecast](revenue_files/revenue_models.png)
 > Business Insight
 >
 > The comparison shows that Holt-Winters provides the most stable and accurate forecasts, making it the preferred model for production planning and budgeting.
