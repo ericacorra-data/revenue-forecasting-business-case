@@ -285,9 +285,7 @@ plt.legend()
 plt.show()
 ```
 ![Revenue Forecast](revenue_files/revenue_forecast.png)
-```python
 #### Holt-Winters
-
 ```python
 # Apply Holt-Winters Exponential Smoothing to model trend and annual seasonality
 modello_HW = ExponentialSmoothing(monthly_revenue, trend="add", seasonal="add", seasonal_periods=12)
@@ -297,8 +295,234 @@ fit_HW = modello_HW.fit()
 forecast_esponenziale = fit_HW.forecast(12)
 ```
 The Holt-Winters Exponential Smoothing model successfully captures both trend and seasonal patterns in the monthly revenue series and generates more realistic revenue projections by explicitly modeling seasonal effects. The similarity between Holt-Winters and SARIMA forecasts further confirms the presence of strong annual seasonality in the dataset.
+```python
+last_months = 12 
+storico_recente = monthly_revenue[-last_months:]
 
+plt.figure(figsize=(12,5))
+# Storico recente
+plt.plot(storico_recente.index, storico_recente/ 1_000_000, linewidth =2, marker = 'o', label = "Storico ultimi 36 mesi")
 
+# Forecast
+plt.plot(forecast_ARIMA.index, forecast_ARIMA / 1_000_000, marker = 'x', linestyle = '--', color='red', label = "Forecast ARIMA")
+plt.fill_between(forecast_ARIMA.index, conf_int_ARIMA.iloc[:,0] / 1_000_000, conf_int_ARIMA.iloc[:,1] / 1_000_000, 
+                 color = 'pink', alpha =0.3, label ='95% CI ARIMA')
+
+plt.plot(forecast_SARIMA.index, forecast_SARIMA / 1_000_000, marker = '^', linestyle = '--', color='blue', label = "Forecast SARIMA")
+plt.fill_between(forecast_SARIMA.index, conf_int_SARIMA.iloc[:,0] / 1_000_000, conf_int_SARIMA.iloc[:,1] / 1_000_000,
+                 color = 'green', alpha =0.3, label ='95% CI SARIMA')
+
+plt.axvline(monthly_revenue.index[-1], color='grey', linestyle=':')
+
+plt.plot(forecast_esponenziale.index, forecast_esponenziale / 1_000_000, marker = '^', color='orange',  label = "Lissage esponenziale")
+
+plt.title("12-Month Revenue Forecast with Confidence Intervals - Model Comparison",fontsize=16, fontweight="bold")
+plt.xlabel("Date",fontsize=14, fontweight="bold")
+plt.ylabel("Revenue (M€)",fontsize=14, fontweight="bold")
+plt.grid(True)
+plt.legend()
+plt.show()
+```
+> Business Insight
+>
+> The comparison shows that Holt-Winters provides the most stable and accurate forecasts, making it the preferred model for production planning and budgeting.
+## Model Evaluation:
+```python
+# Generate forecasts for the 12-month test period using the best configuration of each model
+pred_test_ARIMA = ARIMA(train, order=(2,1,1)).fit().forecast(12)
+
+pred_test_SARIMA = SARIMAX(
+    train,
+    order=(1,1,2),
+    seasonal_order=(1,1,1,12)
+).fit(disp=False).forecast(12)
+
+pred_test_HW = ExponentialSmoothing(
+    train,
+    trend="add",
+    seasonal="add",
+    seasonal_periods=12
+).fit().forecast(12)
+```
+```python
+# Function to compute forecasting performance metrics
+def evaluate_model(actual, predicted):
+
+    return {
+        "MAE": mean_absolute_error(actual, predicted),
+        "RMSE": sqrt(mean_squared_error(actual, predicted)),
+        "MAPE (%)": mean_absolute_percentage_error(actual, predicted) * 100
+    }
+
+# Compare forecasting models on the test set
+metrics_df = pd.DataFrame({
+    "ARIMA": evaluate_model(test, pred_test_ARIMA),
+    "SARIMA": evaluate_model(test, pred_test_SARIMA),
+    "Holt-Winters": evaluate_model(test, pred_test_HW)
+}).T
+
+metrics_df = (
+    metrics_df
+      .round(2)
+      .sort_values("RMSE")
+)
+
+display(
+    metrics_df.style.format({
+        "MAE": "{:,.0f}",
+        "RMSE": "{:,.0f}",
+        "MAPE (%)": "{:.2f}%"
+    })
+)
+```
+| Model | MAE | RMSE | MAPE (%) |
+|:------|----:|-----:|---------:|
+| ⭐ Holt-Winters | 1,661,154 | **1,941,746** | **6.02%** |
+| SARIMA | 1,999,627 | 2,523,145 | 7.27% |
+| ARIMA | 8,862,247 | 10,700,574 | 35.13% |
+
+```python
+best_model = metrics_df.index[0]
+print(f"🏆 Selected forecasting model: {best_model}")
+```
+```text
+🏆 Selected forecasting model: Holt-Winters
+```
+>  **Business Insight**
+>
+> Holt-Winters achieved the lowest **MAE**, **RMSE**, and **MAPE**, demonstrating the highest forecasting accuracy among the evaluated models.
+>
+> Although SARIMA also captured the annual seasonality effectively, Holt-Winters provided slightly better predictive performance while maintaining a simpler and more interpretable model structure.
+>
+> Based on these results, Holt-Winters was selected as the preferred forecasting model for supporting budgeting, production planning, and strategic business planning.
+```python
+#  Holt-Winters residuals
+residuals = monthly_revenue - fit_HW.fittedvalues
+
+resid_std = residuals.std()
+print("Deviazione standard residui:", round(resid_std,2))
+```
+To quantify forecast uncertainty, residuals from the Holt-Winters model were analyzed after fitting the model to the full historical dataset. The residual standard deviation was estimated at approximately €2.41M, providing a measure of the typical forecasting error. This value was subsequently used as the volatility parameter in the Monte Carlo simulation, allowing future revenue scenarios to incorporate realistic levels of uncertainty based on the model's historical performance. By deriving simulation shocks directly from observed residual variability, the scenario analysis remains grounded in the empirical behavior of the revenue series rather than relying on arbitrary assumptions.
+## Monte Carlo simulation
+```python
+# Define simulation parameters
+n_simulations = 1000
+forecast_horizon = 12
+# Use Holt-Winters forecasts as the baseline scenario
+base_forecast = pred_test_HW.values
+# Create a matrix to store simulated revenue paths
+simulations = np.zeros((forecast_horizon, n_simulations))
+# Generate Monte Carlo scenarios by adding random shocks  based on the historical residual standard deviation
+for i in range(n_simulations):
+    random_shock = np.random.normal(0, resid_std, forecast_horizon)
+    simulations[:, i] = base_forecast + random_shock
+```
+```python
+# Calculate key Monte Carlo forecast scenarios
+# Average expected revenue across all simulations
+mean_scenario = simulations.mean(axis=1)
+# Pessimistic scenario (5th percentile)
+pessimistic_scenario = np.percentile(simulations, 5, axis=1)
+# Optimistic scenario (95th percentile)
+optimistic_scenario = np.percentile(simulations, 95, axis=1)
+# Use forecast dates as the time index
+mc_index = pred_test_HW.index
+
+# Convert scenarios into time-indexed series
+mean_series = pd.Series(mean_scenario, index=mc_index)
+pess_series = pd.Series(pessimistic_scenario, index=mc_index)
+opt_series = pd.Series(optimistic_scenario, index=mc_index)
+```
+
+```python
+# Calculate total annual revenue for each simulated scenario
+annual_totals = simulations.sum(axis=0)
+# Compute key statistics from the annual revenue distribution
+mean_annual = annual_totals.mean()
+p5_annual = np.percentile(annual_totals, 5)
+p95_annual = np.percentile(annual_totals, 95)
+print("\n===== MONTE CARLO RESULTS =====\n")
+
+print("Mean Annual Scenario:     {:.2f} M€".format(mean_annual / 1_000_000))
+print("Pessimistic Scenario (5%): {:.2f} M€".format(p5_annual / 1_000_000))
+print("Optimistic Scenario (95%): {:.2f} M€".format(p95_annual / 1_000_000))
+
+# Define the annual revenue target
+threshold = 400_000_000
+# Estimate the probability of exceeding the target
+prob_above = np.mean(annual_totals > threshold) * 100
+
+print("\nProbability of exceeding {:.0f} M€: {:.1f}%".format(
+    threshold / 1_000_000,
+    prob_above
+))
+```
+```text
+===== MONTE CARLO RESULTS =====
+
+Mean Annual Scenario:     436.82 M€
+Pessimistic Scenario (5%): 423.29 M€
+Optimistic Scenario (95%): 449.74 M€
+
+Probability of exceeding 400 M€: 100.0%
+```
+>  Business Insight
+
+Monte Carlo simulation estimates an expected annual revenue of €437M with a 100% probability of exceeding the €400M target, indicating a robust and low-risk forecast.
+
+```python
+# Select the most recent 36 months of historical revenue
+last_months = 36
+storico_recent = monthly_revenue[-last_months:]
+
+plt.figure(figsize=(12,5))
+
+# Historical revenue
+plt.plot(storico_recent.index,
+         storico_recent / 1_000_000,
+         label="Historical Revenue",
+         linewidth=2)
+
+# Expected scenario from Monte Carlo simulation
+plt.plot(mean_series.index,
+         mean_series / 1_000_000,
+         linestyle="--",
+         label="Expected Scenario")
+
+# Forecast uncertainty range (5th–95th percentile)
+plt.fill_between(mc_index,
+                 pess_series / 1_000_000,
+                 opt_series / 1_000_000,
+                 alpha=0.2,
+                 label="5%-95% Confidence Range")
+# Mark the transition between historical and forecast periods
+plt.axvline(mean_series.index[0],
+            linestyle=":",
+            color="black")
+
+plt.title("Monte Carlo Simulation - Revenue Forecast",fontsize=16, fontweight="bold")
+plt.ylabel("Revenue (M€)",fontsize=14, fontweight="bold")
+plt.legend()
+plt.grid(True)
+plt.show()
+```
+![Revenue Forecast](revenue_files/revenue_monte_carlo.png)
+## Business Conclusions:
+This project addressed the key business questions defined at the beginning of the analysis.
+| Business Question              | Finding                          | Business Impact              |
+| ------------------------------ | -------------------------------- | ---------------------------- |
+| Expected revenue next year     | €437M                            | Supports annual budgeting    |
+| Best forecasting model         | Holt-Winters                     | Highest forecasting accuracy |
+| Revenue seasonality            | Yes                              | Seasonal planning required   |
+| Forecast reliability           | High                             | Reduced forecasting risk     |
+| Probability of exceeding €400M | 100%                             | Target considered achievable |
+| Business value                 | Budgeting, inventory, production,| Better strategic decisions   |
+|                                | risk assessment                  |                              |                               
+
+## Final Takeaway
+
+This project demonstrates how statistical forecasting, model evaluation and Monte Carlo simulation can be combined to support strategic business planning.
+The selected Holt-Winters model provides accurate revenue forecasts while quantifying uncertainty, enabling more informed budgeting, production planning and risk management decisions.
 
 
 
