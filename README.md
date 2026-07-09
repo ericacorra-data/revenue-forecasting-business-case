@@ -88,29 +88,6 @@ The resulting time series is used to train and evaluate multiple forecasting mod
 | Target Variable | Revenue (€) |
 
 ## Importing and cleaning the data
-
-# Import Required Libraries
-import sqlite3
-
-import numpy as np
-import pandas as pd
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-from statsmodels.tsa.stattools import adfuller
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from statsmodels.tsa.holtwinters import ExponentialSmoothing
-
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import (
-    mean_absolute_error,
-    mean_squared_error,
-    mean_absolute_percentage_error
-)
-from math import sqrt
-from IPython.core.display import HTML as Center
 ```python
 # Import Required Libraries
 import sqlite3
