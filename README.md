@@ -303,7 +303,7 @@ plt.show()
 > Business Insight
 >
 > The comparison shows that Holt-Winters provides the most stable and accurate forecasts, making it the preferred model for production planning and budgeting.
-## Model Evaluation:
+## Model Evaluation
 ```python
 # Generate forecasts for the 12-month test period using the best configuration of each model
 pred_test_ARIMA = ARIMA(train, order=(2,1,1)).fit().forecast(12)
@@ -484,7 +484,7 @@ plt.grid(True)
 plt.show()
 ```
 ![Revenue Forecast](revenue_files/revenue_monte_carlo.png)
-## Business Conclusions:
+## Business Conclusions
 This project addressed the key business questions defined at the beginning of the analysis.
 | Business Question              | Finding                          | Business Impact              |
 | ------------------------------ | -------------------------------- | ---------------------------- |
