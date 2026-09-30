@@ -372,13 +372,7 @@ print(f"🏆 Selected forecasting model: {best_model}")
 > Although SARIMA also captured the annual seasonality effectively, Holt-Winters provided slightly better predictive performance while maintaining a simpler and more interpretable model structure.
 >
 > Based on these results, Holt-Winters was selected as the preferred forecasting model for supporting budgeting, production planning, and strategic business planning.
-```python
-#  Holt-Winters residuals
-residuals = monthly_revenue - fit_HW.fittedvalues
 
-resid_std = residuals.std()
-print("Deviazione standard residui:", round(resid_std,2))
-```
 To quantify forecast uncertainty, residuals from the Holt-Winters model were analyzed after fitting the model to the full historical dataset. The residual standard deviation was estimated at approximately €2.41M, providing a measure of the typical forecasting error. This value was subsequently used as the volatility parameter in the Monte Carlo simulation, allowing future revenue scenarios to incorporate realistic levels of uncertainty based on the model's historical performance. By deriving simulation shocks directly from observed residual variability, the scenario analysis remains grounded in the empirical behavior of the revenue series rather than relying on arbitrary assumptions.
 ## Monte Carlo simulation
 ```python
@@ -406,8 +400,7 @@ mean_scenario = simulations.mean(axis=1)
 pessimistic_scenario = np.percentile(simulations, 5, axis=1)
 # Optimistic scenario (95th percentile)
 optimistic_scenario = np.percentile(simulations, 95, axis=1)
-# Use forecast dates as the time index
-mc_index = pred_test_HW.index
+
 
 # Convert scenarios into time-indexed series
 mean_series = pd.Series(mean_scenario, index=mc_index)
