@@ -103,7 +103,6 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
-from sklearn.linear_model import LinearRegression
 from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
@@ -208,7 +207,7 @@ monthly_revenue = vendite["fatturato"].resample("ME").sum()
 ```python
 plt.figure(figsize=(12,3))
 plt.plot(monthly_revenue.index, monthly_revenue / 1000000.0, linewidth=2)
-plt.title("Revenue by month (2015-2025)", fontsize=16, fontweight="bold")
+plt.title("Revenue by month (2015-2024)", fontsize=16, fontweight="bold")
 plt.xlabel("Year",fontsize=14, fontweight="bold")
 plt.ylabel("Revenue (M€)",fontsize=14,fontweight="bold")
 plt.grid(True)
@@ -292,7 +291,7 @@ storico_recente = monthly_revenue[-last_months:]
 
 plt.figure(figsize=(12,5))
 # Historical data
-plt.plot(storico_recente.index, storico_recente/ 1_000_000, linewidth =2, marker = 'o', label = "Last 36 months")
+plt.plot(storico_recente.index, storico_recente/ 1_000_000, linewidth =2, marker = 'o', label = "Last 12 months")
 
 # Forecast
 plt.plot(forecast_ARIMA.index, forecast_ARIMA / 1_000_000, marker = 'x', linestyle = '--', color='red', label = "Forecast ARIMA")
@@ -386,14 +385,18 @@ To quantify forecast uncertainty, residuals from the Holt-Winters model were ana
 # Define simulation parameters
 n_simulations = 1000
 forecast_horizon = 12
-# Use Holt-Winters forecasts as the baseline scenario
-base_forecast = pred_test_HW.values
-# Create a matrix to store simulated revenue paths
-simulations = np.zeros((forecast_horizon, n_simulations))
-# Generate Monte Carlo scenarios by adding random shocks  based on the historical residual standard deviation
-for i in range(n_simulations):
-    random_shock = np.random.normal(0, resid_std, forecast_horizon)
-    simulations[:, i] = base_forecast + random_shock
+# Simulate 1,000 future paths from the fitted Holt-Winters model
+sim_df = fit_HW.simulate(
+    nsimulations=forecast_horizon,
+    repetitions=n_simulations,
+    anchor="end",
+    error="add",
+    random_errors="bootstrap",
+    random_state=RANDOM_SEED, 
+)
+simulations = sim_df.to_numpy()          # shape: (12 months, 1000 scenarios)
+mc_index = forecast_esponenziale.index  
+print(simulations.shape, mc_index.min().date(), "->", mc_index.max().date())
 ```
 ```python
 # Calculate key Monte Carlo forecast scenarios
@@ -438,15 +441,15 @@ print("\nProbability of exceeding {:.0f} M€: {:.1f}%".format(
 ```text
 ===== MONTE CARLO RESULTS =====
 
-Mean Annual Scenario:     436.82 M€
-Pessimistic Scenario (5%): 423.29 M€
-Optimistic Scenario (95%): 449.74 M€
+Mean Annual Scenario:     415.43 M€
+Pessimistic Scenario (5%): 347.41 M€
+Optimistic Scenario (95%): 481.96 M€
 
-Probability of exceeding 400 M€: 100.0%
+Probability of exceeding 400 M€: 63.7%
 ```
 >  Business Insight
 >
->Monte Carlo simulation estimates an expected annual revenue of €437M with a 100% probability of exceeding the €400M target, indicating a robust and low-risk forecast.
+>Monte Carlo simulation estimates an expected annual revenue of €415.43M with a 63.7% probability of exceeding the €400M target. The probability refers to the model's error distribution: it does not include shocks never seen in the historical data (e.g. loss of a major customer), which should be assessed separately.
 
 ```python
 # Select the most recent 36 months of historical revenue
