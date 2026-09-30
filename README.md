@@ -25,9 +25,9 @@ This project demonstrates how statistical forecasting models and scenario analys
 >
 > **Best Forecasting Model:**  Holt-Winters Exponential Smoothing
 >
-> **Expected Revenue:** €437.07 M
+> **Expected Revenue:** €415.43 M
 >
-> **Probability of exceeding €400M:** 100%
+> **Probability of exceeding €400M:** 63.7%
 >
 > **Forecast Accuracy:**  Lowest RMSE among all evaluated models
 >
@@ -83,7 +83,7 @@ The resulting time series is used to train and evaluate multiple forecasting mod
 |----------|-------------|
 | Source | SQLite Database |
 | Industry | Manufacturing |
-| Period | 2015-2025 |
+| Period | 2015-2024 |
 | Frequency | Monthly |
 | Target Variable | Revenue (€) |
 
@@ -477,11 +477,11 @@ plt.show()
 This project addressed the key business questions defined at the beginning of the analysis.
 | Business Question              | Finding                          | Business Impact              |
 | ------------------------------ | -------------------------------- | ---------------------------- |
-| Expected revenue next year     | €437M                            | Supports annual budgeting    |
+| Expected revenue next year     | €415M                            | Supports annual budgeting    |
 | Best forecasting model         | Holt-Winters                     | Highest forecasting accuracy |
 | Revenue seasonality            | Yes                              | Seasonal planning required   |
-| Forecast reliability           | High                             | Reduced forecasting risk     |
-| Probability of exceeding €400M | 100%                             | Target considered achievable |
+| Forecast reliability           |  Good on seasonal patterns       | Reduced forecasting risk     |
+| Probability of exceeding €400M | 63.7%                            | Target: Likely but not secured |
 | Business value                 | Budgeting, inventory, production,| Better strategic decisions   |
 |                                | risk assessment                  |                              |                               
 
